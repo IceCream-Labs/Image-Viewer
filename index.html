@@ -1,0 +1,175 @@
+<html>
+<head>
+	<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Arimo:400,700,400italic">
+	<link rel="stylesheet" href="css/fonts/linecons/css/linecons.css">
+	<link rel="stylesheet" href="css/fonts/fontawesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<link rel="stylesheet" href="css/xenon-core.css">
+	<link rel="stylesheet" href="css/xenon-forms.css">
+	<link rel="stylesheet" href="css/xenon-components.css">
+	<link rel="stylesheet" href="css/xenon-skins.css">
+</head>
+<body>
+<style>
+.gallery {
+    text-align:center;
+    border:1px solid #666;
+}
+.image_class {
+    display:inline-block;
+    margin:5px 20px;
+    padding:5px;
+    background: white;
+    border:1px solid #CCC;
+}
+</style>
+  <div class="config-holder">
+    IP Address:<input type="text" id="ip" value="">
+    <br>
+    No of images per page:<input type="number" min="1" id="image_count">
+    <br />
+    Go to page number:<input type="number" min="1" id="go_to_page">
+    <br />
+    <input  class="btn btn-secondary btn-icon" type="file" id="image_path_file">
+    
+    <br><br>
+    <!-- <input type="button"  value="Load Images"> -->
+    <button id="load-images" class="btn btn-blue btn-icon">
+        <span>Load images</span>
+    </button>
+    <h2>Current Page is : <span id='current_page_number'></span></h2>
+  </div>
+  <div class="gallery" style="width:100%;float:left">
+    <!-- <div class="img">
+      <a target="_blank" href="fjords.jpg">
+        <img src="http://127.0.0.1:8080/cosmos.jpg" alt="Fjords" width="300" height="200">
+      </a>
+      <div class="desc">Add a description of the image here</div>
+    </div>
+
+    <div class="img">
+      <a target="_blank" href="forest.jpg">
+        <img src="http://127.0.0.1:8080/cosmos.jpg" alt="Forest" width="300" height="200">
+      </a>
+      <div class="desc">Add a description of the image here</div>
+    </div>
+
+    <div class="img">
+      <a target="_blank" href="lights.jpg">
+        <img src="http://127.0.0.1:8080/cosmos.jpg" alt="Northern Lights" width="300" height="200">
+      </a>
+      <div class="desc">Add a description of the image here</div>
+    </div>
+
+    <div class="img">
+      <a target="_blank" href="mountains.jpg">
+        <img src="http://127.0.0.1:8080/cosmos.jpg" alt="Mountains" width="300" height="200">
+      </a>
+      <div class="desc">Add a description of the image here</div>
+    </div> -->
+  </div>
+  <div class="vertical-top" style="text-align: center;display:none">
+    <br/>
+    <button id="previous" class="btn btn-primary btn-icon btn-icon-standalone">
+        <i class="fa-long-arrow-left"></i>
+        <span>Previous</span>
+    </button>
+    <button id="next" class="btn btn-white btn-icon btn-icon-standalone btn-icon-standalone-right">
+        <i class="fa-long-arrow-right"></i>
+        <span>Next</span>   
+    </button>
+  </div>
+</div>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
+  <script type="text/javascript">
+  $( document ).ready(function() {
+    var file_data = [];
+    var mappedData = {};
+    var ip = '';
+    var image_count = 10;
+    var current_page = 1;
+    $('#image_path_file').change(function() {
+      var input = this;
+      var reader = new FileReader();
+      reader.onload = function(){
+        var text = reader.result;
+        file_data = text.split("\n").filter(Boolean);
+      };
+      reader.readAsText(input.files[0]);
+    });
+
+    $('#load-images').click(function(){
+      $('.gallery').empty();
+      current_page = parseInt($("#go_to_page").val());
+      current_page = (current_page > 0) ? current_page:1;
+      console.log(current_page);
+      image_count = parseInt($('#image_count').val());
+      image_count = (image_count > 0) ? image_count:1;
+      ip = $('#ip').val();
+      loadImages(file_data, image_count, ip);
+      $('.vertical-top').show();
+    })
+
+    function loadImages(data, image_count, ip) {
+      mappedData = {}
+      var tempArray = [];
+      count=1
+      _.each(data, function(value, key){
+         if(key%image_count == 0 && key != 0){
+           mappedData[count] = tempArray;
+           tempArray = [];
+           tempArray.push(value);
+           count++;
+         }else{
+           tempArray.push(value);
+         }
+      });
+      if(tempArray){
+        mappedData[count] = tempArray;
+      }
+      addImagesToDiv(mappedData, current_page)
+    }
+    
+    function addImagesToDiv(){
+      $('.gallery').empty();
+      $('#current_page_number').html(current_page)
+      console.log(mappedData[current_page]);
+      _.each(mappedData[current_page], function(value, key){
+	var imageUrl = ''
+        if(value[0] == '.'){
+            imageUrl = ip +value.substring(1, value.length);
+        }else{
+            imageUrl = ip + value
+	}
+	imageUrl = imageUrl.split(' ').join('%20');
+        $(".gallery").append('<div class="image_class"><a target="_blank" href='+ imageUrl  +'>\
+            <img src='+ imageUrl +' alt="Product" width="auto" height="200">\
+            </a><div class="desc">'+ value +'</div></div>');
+      });
+      $("html, body").animate({ scrollTop: 0 }, "slow");
+    }
+    
+    $('#next').click(function(){        
+        if(!mappedData[current_page + 1]){
+            console.log(current_page + 1);
+            console.log(mappedData);
+            alert('Reached end of page');
+            return true;
+        }
+        current_page += 1
+        addImagesToDiv()
+    });
+    
+    $('#previous').click(function(){
+        if(!mappedData[current_page - 1]){
+            alert('You are in first page');
+            return true;
+        }
+        current_page -= 1
+        addImagesToDiv()
+    })
+  });
+  </script>
+</body>
+</html>
